@@ -25,7 +25,7 @@ class Main:
             #readsensors
             d = 12.1234
             payload='{id:1,distance:'+str(d)+'}'
-            self.lora.send(config.MAC,1, payload.encod() )
+            self.lora.send(config.MAC,1, payload.encode() )
             time.sleep(60)
             
         

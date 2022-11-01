@@ -41,6 +41,7 @@ class LoRa(object):
         #prefix = name[len(name)-10:]
 
         pkt_len = 8+(len(payload)*2)
+        print("pkt_len:",pkt_len)
         if pkt_len>TMAC.MAX_PKT_LENGTH: #Do fragmentation 
             c = int(math.ceil(pkt_len/TMAC.MAX_PKT_LENGTH))
             size = int(len(payload)/c)+1
