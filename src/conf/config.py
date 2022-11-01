@@ -8,8 +8,8 @@
 #define LORA_DIO1       33
 #define LORA_BUSY       32
 
-import machine 
 import binascii
+import machine
 
 MAC = binascii.hexlify( machine.unique_id() )
 

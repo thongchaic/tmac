@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IP=192.168.6.22
+IP=192.168.6.33
 
 #FILES=('./src/nfd.py' './src/main.py' './src/misc/ping.py' './src/fw/routes.py' './src/config/config.py' './src/fw/fw.py' './src/core/ndn.py' './src/core/sx127x.py' './src/faces/face_table.py' './src/faces/lora.py' './src/faces/mqtt.py' './src/utils/pit.py'  './src/misc/experiments.py')
 FILES=('./src/main.py' './src/conf/config.py' './src/core/sx127x.py' './src/core/tmac.py'  './src/inf/lora.py')

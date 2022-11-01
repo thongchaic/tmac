@@ -40,7 +40,7 @@ class LoRa(object):
 
         #prefix = name[len(name)-10:]
 
-        pkt_len = 14+(len(name)*2)+(len(payload)*2)
+        pkt_len = 8+(len(payload)*2)
         if pkt_len>TMAC.MAX_PKT_LENGTH: #Do fragmentation 
             c = int(math.ceil(pkt_len/TMAC.MAX_PKT_LENGTH))
             size = int(len(payload)/c)+1
@@ -53,25 +53,25 @@ class LoRa(object):
         else:
             #encode( MAC,c,i,t,payload )
             hexlify = self.tmac.encode(MAC,1,0,_type,payload)
-
+            print(hexlify)
             self.lora.println(hexlify, implicit_header=False)
         self.on_send = False
         
-    def receive(self):
-        if self.on_send:
-            return
+    # def receive(self):
+    #     if self.on_send:
+    #         return
 
-        if not self.lora.received_packet():
-            return 
+    #     if not self.lora.received_packet():
+    #         return 
 
-        payload = self.lora.read_payload()
-        if payload is None or len(payload) < 14:
-            return
+    #     payload = self.lora.read_payload()
+    #     if payload is None or len(payload) < 14:
+    #         return
 
-        pkt_type, f_count, f_index, p_len, n_len, chksum, name, payload = self.ndn.decode(payload)
+    #     pkt_type, f_count, f_index, p_len, n_len, chksum, name, payload = self.ndn.decode(payload)
         
-        if pkt_type is None:
-            return 
+    #     if pkt_type is None:
+    #         return 
 
         #suffix = name
         #for sfx in self.buffer.keys():
@@ -79,22 +79,22 @@ class LoRa(object):
         #       name = sfx 
         #       break 
 
-        if (f_count-1) != f_index: #more frag
-            if name in self.buffer:
-                self.buffer[name].append([f_index,payload])# = self.buffer[name] + payload
-            else:
-                self.buffer[name] = [f_index,payload]
-            return
+        # if (f_count-1) != f_index: #more frag
+        #     if name in self.buffer:
+        #         self.buffer[name].append([f_index,payload])# = self.buffer[name] + payload
+        #     else:
+        #         self.buffer[name] = [f_index,payload]
+        #     return
         
-        if (f_count-1) == f_index: #last frag or no frag 
-            if name in self.buffer:
-                #payload = self.buffer[name] + payload
-                if len(self.buffer[name]) != f_count: #missed some fragments 
-                    self.buffer.pop(name)
-                    return
-                self.buffer[name].sort()
-                _payload = ''
-                for p in enumerate(self.buffer[name]):
-                    _payload += p
-                payload = _payload+payload
-                self.buffer.pop(name)
+        # if (f_count-1) == f_index: #last frag or no frag 
+        #     if name in self.buffer:
+        #         #payload = self.buffer[name] + payload
+        #         if len(self.buffer[name]) != f_count: #missed some fragments 
+        #             self.buffer.pop(name)
+        #             return
+        #         self.buffer[name].sort()
+        #         _payload = ''
+        #         for p in enumerate(self.buffer[name]):
+        #             _payload += p
+        #         payload = _payload+payload
+        #         self.buffer.pop(name)
