@@ -196,8 +196,9 @@ class SX127x:
         self.write_register(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_TX)
 
         # wait for TX done, standby automatically on TX_DONE
-        while self.read_register(REG_IRQ_FLAGS) & IRQ_TX_DONE_MASK == 0:
-            pass
+
+        # while self.read_register(REG_IRQ_FLAGS) & IRQ_TX_DONE_MASK == 0: #hack due to IRQ_TX_DONE_MASK not marked!
+        #     pass
 
         # clear IRQ's
         self.write_register(REG_IRQ_FLAGS, IRQ_TX_DONE_MASK)
