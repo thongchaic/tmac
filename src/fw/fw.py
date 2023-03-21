@@ -1,153 +1,251 @@
 import os 
 import time
 import random
+import json 
 import _thread
 from lora import LoRa
-from mqtt import MQTTx
-
+from tokens import Tokens
+from names import Names
+from tmac import TMAC 
+#from mqtt import MQTTx
 class Forwarder(object):
     def __init__(self,MAC, device_config, lora_parameters, mqtt_config):
         print("init...Forwarder....")
-        self.stop = None 
         self.MAC=MAC 
-        self.table = FaceTable()
-        self.routes = Routes()
-        self.pit = Pit()
-        self.accepted = False
+        self.Ts = 0
+        self.To = 0 
+        self.isTimeout = True
+        self.tries = 0
+        self.latest_tries = None 
 
-        self.lora = LoRa(1, device_config, lora_parameters)
-        self.lora.onReceivedJoinInterest = self.onReceivedJoinInterest
-        self.lora.onReceivedJoinData = self.onReceivedJoinData
-        self.addFaceTable(self.lora.fid, self.lora)
+        self.TOKEN = device_config['token']
+        self.tokens = Tokens()
 
-        self.mqttx = MQTTx(2,MAC,mqtt_config)
-        self.addFaceTable(self.mqttx.fid, self.lora)
+        self.joinResponded = None 
+        self.receiveSubscribe = None 
+        self.ACK = None 
 
+        self.names = Names()
 
-        self.i_buffer = [] #fix maximum recursion depth exceeded
-        self.d_buffer = [] #fix maximum recursion depth exceeded
+        self.lora = LoRa(MAC, device_config, lora_parameters)
+        self.lora.receivedJoinRequest = self.receivedJoinRequest
+        self.lora.receivedJoinResponse = self.receivedJoinResponse
+        self.lora.loraReceivedPublish = self.loraReceivedPublish
+        self.lora.loraReceivedACK = self.loraReceivedACK
+        self.lora.loraSpecial = self.loraSpecial
+        self.lora.loraReceivedSubscribe = self.loraReceivedSubscribe
+
+        #self.mqttx = MQTTx(MAC,mqtt_config)
+
+        self.l_buffer = []#fixed: maximum recursion depth exceeded
         
         _thread.start_new_thread(self.daemon,())
 
-    def addRoute(self,fid,name):
-        self.routes.add(fid,name)
+ 
+    def loraPublish(self, payload, ACK):
+        GW = self.names.gw()
+        payload['MAC'] = self.MAC
+        self.ACK = ACK
+        self.latest_tries = None 
+        self.isTimeout = True 
+        #print("loraPublish:", GW, TMAC.PUBLISH, payload)
+        self.l_buffer.append( (GW, TMAC.PUBLISH, json.dumps(payload).encode()) )
 
-    def addFaceTable(self, fid, obj):
-        self.table.add(fid, obj)
-        obj.onRecievedInterest = self.onRecievedInterest
-        obj.onReceivedData = self.onReceivedData
-
-    def forceSatisfied(self, name):
-        self.pit.satisfied(name)
-
-    #Next hop 
-    def onRecievedInterest(self,in_face, p_len, n_len, name, payload):
-        #Unsolicited 
-        if name is None: 
-            return
-        
+    def loraReceivedPublish(self,_mac, p_type, p_len, frag_count, _payload):
+        #fw fw to mqtt - broker
+        #print("loraReceivedPublish",_mac, p_type, _payload)
        
-        #pit 
-        if self.pit.in_pit(name):
-            return 
-        #fwd interest 
-
-        #CS 
-        #no cs implemented
-        #if self.cs.match()
-        
-        #self.routes.show()
-        #CS miss 
-        #
-        if not self.routes.match(name):
-            self.nack(in_face,name,'no routes')
-            return
-
-        #Dispatch strategy => next hop 
-        #exact match + broadcast strategy 
-
-        self.i_buffer.append( (in_face,name,payload) )
-
-    def onReceivedData(self,in_face, p_len, n_len, name, payload):
-        if self.pit.in_pit(name):
-            self.d_buffer.append( (in_face, name, payload) )
-        
-    def sendData(self, in_face, name, payload):
-        fids = self.pit.get(name)
-        if len(fids)>0:
-            self.pit.satisfied(name)
-            for fid in fids:
-                out_face = self.table.get(fid)
-                out_face.send(Ndn.DATA, name, payload)
-
-    def sendInterest(self,in_face, name, interest):
-        fids = self.routes.get(name) 
-        if len(fids)>0:
-            self.pit.add(in_face, name)
-        for fid in fids:
-            if in_face != fid:
-                out_face = self.table.get(fid)
-                out_face.send(Ndn.INTEREST, name, interest)
-
-    def onReceivedJoinInterest(self,in_face, p_len, n_len, name, payload):
-        if name is None: #Unsolicited 
-            return
-            
-        accepted = True 
-
-        if accepted:
-           self.sendJoinData(in_face,name,payload)
-        else:
-            self.nack(in_face,name,"rejected") 
     
-    def onReceivedJoinData(self,fid, p_len, n_len, name, payload):
-        #store EKEY 
-        self.accepted=True 
-        self.stop = time.ticks_ms()
-
-    def sendJoinInterest(self, name, interest):
-        fids = self.routes.get(name) 
-        #print("fids=>",fids)
-        for fid in fids:
-            out_face = self.table.get(fid)
-            if out_face:
-                #print("sendJoinInterest=>",name,interest)
-                out_face.send(Ndn.JOIN_INTEREST, name, interest)
-
-    def sendJoinData(self, fid, name, data):
-        out_face = self.table.get(fid)
-        if out_face:
-            #print("sendJoinData=>",name,data)
-            out_face.send(Ndn.JOIN_DATA, name, data)
-
-    def nack(self,fid, name, reason): #timeout may be better 
-        out_face = self.table.get(fid)
-        if out_face:
-            out_face.send(Ndn.NACK,name,reason)  
+        payload = self.toJSON(_payload)
         
-    def onReceivedNack(self):
-        pass
+        if payload is None:
+            return 
+        #simulate broker conn.
+        if 'id' not in payload:
+            print("NoID")
+            return 
+        if 'MAC' not in payload:
+            print("NoMAC")
+            return 
+
+        name = self.names.get(payload['MAC'],payload['id'])
+        
+        #print("MQTT.publish: topic=", name[0], ", data=",payload['values'])
+        time.sleep(0.5)
+
+        #ACK
+        ack = {
+            "token": random.random(),
+            "received_len": p_len,
+            "frag_count" : frag_count,
+            "ACK"  : payload['nonce']
+        }
+
+        self.latest_tries = None
+        self.isTimeout = True 
+        #print("ACK:",payload['MAC'], TMAC.ACK, json.dumps(ack).encode())
+        self.l_buffer.append( (payload['MAC'], TMAC.ACK, json.dumps(ack).encode()) )
+
+    def loraReceivedSubscribe(self, _mac, _type, _payload):
+        if self.receiveSubscribe:
+            self.receiveSubscribe(_mac, _type, _payload)
+
+
+    def loraReceivedACK(self,_mac, p_type, _payload):
+        #print("ACK received:",_mac, p_type, _payload)
+        if self.ACK:
+            payload = self.toJSON(_payload)
+            if payload is None:
+                return 
+            self.ACK(_mac, p_type, payload)
+
+    def sendJoinRequest(self, _MAC, _payload, callback=None):
+        #Received Request
+        self.joinResponded = callback
+        #print("JoinRequest:",_MAC, TMAC.JOINREQUEST, _payload)
+        #print("dumps:",payload)
+        self.l_buffer.append( (_MAC, TMAC.JOINREQUEST, _payload) )
+        #print(self.l_buffer)
+        self.Ts = time.ticks_ms()
+        self.isTimeout = False 
+        self.tries = 0
+
+        #Send Response 
+    def receivedJoinRequest(self, _MAC, _type, _payload):
+        #print("receiveJoinRequest:",_MAC, _type, _payload)
+        payload = None
+        payload = self.toJSON(_payload)
+        
+        if payload is None:
+            return 
+        if payload is None:
+            return 
+        if 'token' not in payload:
+            return
+        if 'nonce' not in payload:
+            return 
+
+        #print("receiveJoinRequest:",_MAC, _type, payload)
+        #Respond JoinRequest
+        #print("Respond JoinRequest:",type( payload['token']), type(self.TOKEN), payload['token'],self.TOKEN)
+        if self.TOKEN == payload['token']:
+            token = self.tokens.add(_MAC)
+            response = {
+                "token" : token,
+                "gw"    : self.MAC, 
+                "nonce" : payload['nonce']
+            }
+            #print("Respond JoinRequest:",_MAC, TMAC.JOINRESPONSE, json.dumps(response).encode())
+            self.l_buffer.append( (_MAC, TMAC.JOINRESPONSE, json.dumps(response).encode()) )
+            #MQTT Subscribe 
+            ids = payload['ids']
+            for i, name in enumerate(payload['names']):
+                #print("MQTT.sub:",i,_MAC,name,ids[i])
+                self.names.add( _MAC, ids[i], name, 2 )
+        else:
+            print("Token not mached!! => do not response....")
+    
+    def receivedJoinResponse(self,_MAC, _type, _payload):
+        #parsed = json.loads(payload)
+        #print("JoinResponse:",MAC, _type, _payload)
+        payload = None
+
+        try:
+            payload = self.toJSON(_payload)
+        except:
+            #print("json parse failed!!")
+            self.loraJoinTimeout()
+            return 
+
+        if payload is None:
+            return 
+
+        if 'gw' not in payload:
+            return 
+
+        if 'token' not in payload:
+            return 
+
+        #print(payload)
+        token = payload['token']
+        self.tokens.add(payload['gw'],token)
+        self.latest_tries = None 
+        self.isTimeout = True 
+        
+        self.names.add(payload['gw'], "", "", 1 )
+
+        if self.joinResponded:
+            self.joinResponded(1,self.tries, payload)
+        self.tries = 0
+        
+    def loraJoinTimeout(self):
+        backoff = random.randint(2,10)
+        print("\nloraJoinTimeout[backoff:",backoff,", retry:",self.tries,",",self.latest_tries)
+        time.sleep(backoff)
+        #print("latest:",self.latest_tries)
+        if self.latest_tries is not None:
+            self.isTimeout = False
+            self.Ts = time.ticks_ms()
+            self.l_buffer.append( self.latest_tries )
+        self.tries = self.tries + 1 
+
+    def loraSpecial(self,_mac, _type, _payload):
+        #print("Trigger to simulate subscribes over lora")
+        
+        data = self.toJSON(_payload)
+        if data is None:
+            return 
+        if 'letters' not in data:
+            return 
+        if 'count' not in data:
+            return 
+
+        letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        
+        i = int(data['count'])
+        while i > 0:
+            rand = ''.join(random.choice(letters) for i in range(data['letters']))
+            payload = {
+                "MAC": self.MAC,
+                "value": rand,
+            }
+            #print("send Special:",json.dumps(payload).encode())
+            self.l_buffer.append( (data["MAC"], TMAC.SUBSCRIBE, json.dumps(payload).encode()) )
+            i = i-1
+            time.sleep(5)
+
+    def sendloraSpecial(self,letters,count):
+        GW = self.names.gw()
+        payload = {
+           "MAC": self.MAC,
+           "count": count,
+           "letters": letters
+        }     
+        self.l_buffer.append( (GW, TMAC.SPECIAL, json.dumps(payload).encode()) )
+
+
+    def toJSON(self,payload):
+        try:
+            return json.loads(payload)
+        except:
+            print("json parse failed:",payload)
+            return None 
     
     def daemon(self): #fix maximum recursion depth exceeded
         interval = time.ticks_ms()
         while True:
             if self.lora:
                 self.lora.receive()
-            if self.mqttx:
-                self.mqttx.receive()
-            if self.udp:
-                self.udp.receive()
+            # if self.mqttx:
+            #     self.mqttx.receive()
 
-            if self.i_buffer:
-                i = self.i_buffer.pop(0)
-                self.sendInterest( i[0], i[1], i[2] )
-            if self.d_buffer:
-                d = self.d_buffer.pop(0)
-                self.sendData( d[0],d[1],d[2] )
-            
-            #sec interval 
-            # if (time.ticks_ms()-interval) > 1000:
-            #     if self.pit:
-            #         self.pit.daemon()
-            #     interval = time.ticks_ms()
-        
+            if self.l_buffer:
+                self.latest_tries = self.l_buffer.pop(0)
+                self.lora.send( self.latest_tries[0], self.latest_tries[1], self.latest_tries[2] )
+         
+            if not self.isTimeout:
+                self.To = time.ticks_ms()
+                if (self.To-self.Ts) > (1000*5):
+                    self.isTimeout = True 
+                    self.loraJoinTimeout()
+

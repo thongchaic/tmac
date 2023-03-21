@@ -21,7 +21,7 @@ device_config = {
     'dio_0':26,
     'reset':23,
     'led':2,
-    'mode':0
+    'token': '36f8f780c'
 }
 
 lora_parameters = {
@@ -38,7 +38,7 @@ lora_parameters = {
 }
 
 mqtt_config = {
-    'server':'192.168.1.111',
+    'server':'10.3.3.0',
     'port':1883,
     'tls_enabled': False,
     'username':'miot',
@@ -47,6 +47,7 @@ mqtt_config = {
 }
 
 wifi_config = {
-    'ssid':'PNHome2',
-    'password':'st11ae58*'
+    'ssid':'CSOffice2',
+    'password':''
 }
+
