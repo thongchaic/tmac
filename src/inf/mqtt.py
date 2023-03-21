@@ -28,25 +28,8 @@ class MQTTx:
     def subscribe(self, topic, data):
         topic = topic.decode() if isinstance(topic, (bytes)) else topic
         data = payload.decode() if isinstance(data, (bytes)) else data
-        print(topic, data)
-        
-        # #topic == name 
-        # #t, l, v = self.ndn.tlv_decode(payload)
-        # pkt_type, f_count, f_index, p_len, n_len, chksum, name, payload = self.ndn.decode(data)
-        
-        # if pkt_type is None:
-        #     return 
-        # print(self.fid, p_len, n_len, name, payload)
+        #print(topic, data)
 
-        # if t == Ndn.INTEREST:
-        #     if self.onRecievedInterest:
-        #         print("onRecievedInterest:",self.fid, p_len, n_len, name, payload)
-        #         self.onRecievedInterest(self.fid, p_len, n_len, name, payload)
-                
-        # elif t == Ndn.DATA:
-        #     if self.onReceivedData:
-        #         print("onReceivedData:",self.fid, p_len, n_len, name, payload)
-        #         self.onReceivedData(self.fid, p_len, n_len, name, payload)
                 
     def receive(self):
         self.mqttx.check_msg()
