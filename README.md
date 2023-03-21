@@ -1,11 +1,9 @@
 # tmac
       ^^ 
      (oo) 
-    /(__)\\ 
-  ----------
+    /(__)\
   <  TMAC  >    
-  ---------- 
-A Telemetry MAC Protocol for MQTT over LoRa Networks
+TMAC: A Telemetry MAC Protocol for MQTT over LoRa Networks
 
 
 # Cite
