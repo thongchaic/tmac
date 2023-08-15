@@ -12,5 +12,5 @@ def get(ip,params):
             break
     s.close()
     
-def post():
-    pass 
+def http_post():
+    pass
