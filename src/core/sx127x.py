@@ -77,19 +77,6 @@ MAX_PKT_LENGTH = 255
 __DEBUG__ = False 
 class SX127x:
 
-    default_parameters = {
-                'frequency': 9232E6, 
-                'tx_power_level': 14, 
-                'signal_bandwidth': 125E3,    
-                'spreading_factor': 7, 
-                'coding_rate': 4, 
-                'preamble_length': 8,
-                'implicit_header': False, 
-                'sync_word': 0x12, 
-                'enable_CRC': False,
-                'invert_IQ': False,
-            }
-
     #AS2 (SX = 923.2 x 16384 = 14222950.4 = D90666)
     frfs = {9232E6: (230, 204, 244),
             9234E6: (230, 217, 192),
@@ -113,7 +100,7 @@ class SX127x:
     def __init__(self,
                  spi,
                  pins,
-                 parameters=default_parameters):
+                 parameters):
         
         self._spi = spi
         self._pins = pins
@@ -196,7 +183,6 @@ class SX127x:
         self.write_register(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_TX)
 
         # wait for TX done, standby automatically on TX_DONE
-
         # while self.read_register(REG_IRQ_FLAGS) & IRQ_TX_DONE_MASK == 0: #hack due to IRQ_TX_DONE_MASK not marked!
         #     pass
 
