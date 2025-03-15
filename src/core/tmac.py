@@ -2,19 +2,21 @@ import binascii
 
 class TMAC:
     MAX_PKT_LENGTH=255 #defined by the sx127x.py 
-    PUBLISH = 1
-    SUBSCRIBE = 2
+    HEADER_LEN=22
+
+    MQTT_PUBLISH = 1
+    MQTT_SUBSCRIBE = 2
+    
     ACK = 5
     JOINREQUEST = 3
     JOINRESPONSE = 4
     SPECIAL = 6
-    HEADER_LEN=20
     
     def __init__(self):
         print("Init...TMAC En/De-coder")
      
     def decode(self, raw=None ):
-        if raw is None or len(raw) <= 20:
+        if raw is None or len(raw) <= 22:
             return None, None, None, None, None, None
         try:
             _mac = raw[0:12]
@@ -31,9 +33,18 @@ class TMAC:
         except:
             return None, None, None, None, None, None
 
-    def chksum(self,data):
-        #crc = binascii.crc_hqx(data,0)
-        #return crc[2:]
+    def chksum(self,data,poly=0x1021, init_val=0xFFFF):
+        #TODO - validate checksum calc
+        # crc = init_val
+        # for byte in data:
+        #     crc ^= (byte << 8) 
+        #     for _ in range(8): 
+        #         if crc & 0x8000: 
+        #             crc = (crc << 1) ^ poly 
+        #         else:
+        #             crc <<= 1 
+        #         crc &= 0xFFFF 
+        # return crc
         return 'ab'
 
     def encode(self,MAC,c,i,t,payload):

@@ -8,10 +8,24 @@
 #define LORA_DIO1       33
 #define LORA_BUSY       32
 
+# +---------+---------------------------------------------------------+
+# | Value   | Description                                             |
+# +---------+---------------------------------------------------------+
+# | DevAddr | DevAddr (32 bits) =  device-specific network address    |
+# |         | generated from the NetID                                |
+# | AppEUI  | IEEE EUI64 value corresponding to the join server for   |
+# |         | an application                                          |
+# | NwkSKey | 128-bit network session key used with AES-CMAC          |
+# | AppSKey | 128-bit application session key used with AES-CTR       |
+# | AppKey  | 128-bit application session key used with AES-ECB       |
+# +---------+---------------------------------------------------------+
+
 import binascii
 import machine
 
-MAC = binascii.hexlify( machine.unique_id() )
+MAC = binascii.hexlify( machine.unique_id() )  #DevAddr
+TOKEN = b'36f8f780c'
+AppKey = b"1234567890ABCDEF"
 
 device_config = {
     'miso':19,
@@ -25,7 +39,7 @@ device_config = {
 }
 
 lora_parameters = {
-    'frequency': 9232E6, 
+    'frequency': 9232E6,
     'tx_power_level': 14, 
     'signal_bandwidth': 125E3,    
     'spreading_factor': 7, 
@@ -38,16 +52,16 @@ lora_parameters = {
 }
 
 mqtt_config = {
-    'server':'10.3.3.0',
+    'enabled': False,  #mote must be False 
+    'server':'202.29.30.31',
     'port':1883,
     'tls_enabled': False,
-    'username':'miot',
-    'password':'mqtt',
-    'client_id':'good2cu*99'
+    'username':'cssrru',
+    'password':'good2cu*99',
+    'client_id':'9ce4abc3a6c3204ef5a5d98b18a018fe'
 }
 
 wifi_config = {
-    'ssid':'CSOffice2',
-    'password':''
+    'ssid':'CSIoT',
+    'password':'11235813'
 }
-
