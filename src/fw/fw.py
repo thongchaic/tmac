@@ -14,7 +14,6 @@ from mqtt import MQTTx
 # 
 MAX_RETRY = 3
 
-
 class Forwarder(object):
     
     def __init__(self,MAC, device_config, lora_parameters, mqtt_config):
@@ -47,11 +46,14 @@ class Forwarder(object):
         self.lora.loraReceivedSubscribe = self.loraReceivedSubscribe
 
         #mqtt_config.enable =  1 
-        self.mqttx = None 
-        # if mqtt_config['enable']:
-        #     self.mqttx = MQTTx(MAC,mqtt_config)
 
-        self.mqttx = MQTTx(MAC,mqtt_config)
+        print("MQTT:",mqtt_config)
+        self.mqttx = None 
+        if mqtt_config['enabled']:
+            self.mqttx = MQTTx(MAC,mqtt_config)
+            self.mqttx.mqttReceiveSubscibe = self.mqttReceiveSubscibe
+        
+        #self.mqttx = MQTTx(MAC,mqtt_config)
 
         self.l_buffer = []#fixed: maximum recursion depth exceeded
         _thread.start_new_thread(self.daemon,())
@@ -63,18 +65,19 @@ class Forwarder(object):
         # self.latest_tries = None 
         # self.isTimeout = True 
         #_payload['src_mac'] = self.MAC
-        schec = {
+        schc = {
             "rule_id": 1,
+            "ack_mode": 1, #Fragmentation mode = ACK Always 
             "src_mac": self.MAC,
             "nonce": random.random(),
             "payload": _payload
         }
        
-        print("\n",schec)
+        print("\n",schc)
         self.checkTimeout = False 
         print("loraPublish:", GW, _type, _payload, ", latest try:", self.latest_tries)
         #                                             # app payload
-        self.l_buffer.append( (GW, _type, json.dumps( schec ).encode()) )
+        self.l_buffer.append( (GW, _type, json.dumps( schc ).encode()) )
 
     def loraReceivedPublish(self,_mac, p_type, p_len, frag_count, _payload):
         #fw fw to mqtt - broker
@@ -87,7 +90,6 @@ class Forwarder(object):
             print("Payload not found!")
             return
         
-        #simulate broker conn.
         # if 'id' not in payload:
         #     print("NoID")
         #     return 
@@ -96,10 +98,15 @@ class Forwarder(object):
         #     return 
         #xtract schc JSON
         
-        if p_type == TMAC.MQTT_PUBLISH:
+        if p_type == TMAC.MQTT_PUBLISH and self.mqttx:
             mqtt_pl = payload['payload']
-            self.mqttx.send(mqtt_pl['name'], mqtt_pl['value'])
-            
+            if mqtt_pl['with_sub']:
+                self.mqttx.add(payload['src_mac'], mqtt_pl['name'])
+            self.mqttx.send(mqtt_pl['name'], mqtt_pl['payload'])
+
+        # if p_type == TMAC.MQTT_LORA_SUBSCRIBE and self.mqttx:
+        #     pass 
+
         #elif p_type == TMAC.WS_PUBLISH:
         #    pass 
         #elif p_type == TMAC.REST_PUBLISH
@@ -127,6 +134,21 @@ class Forwarder(object):
         #     if payload is None:
         #         return 
         #     self.ACK(_mac, p_type, payload)
+    def mqttReceiveSubscibe(self, _MAC, name, payload):
+        print("mqttReceiveSubscibe:",name, payload)
+        #b'th/ac/srru/thongchai/office/relay' b'off'
+        schc = {
+            "rule_id": 2,
+            "ack_mode": 0, #Fragmentation mode = NoACK 
+            "src_mac": self.MAC,
+            "nonce": random.random(),
+            "payload": {
+                "name": name,
+                "payload": payload
+            }
+        }
+        self.l_buffer.append( (_MAC, TMAC.MQTT_SUBSCRIBE, json.dumps( schc ).encode()) )
+        #self.l_buffer.append( (_MAC, TMAC.JOINREQUEST, _payload) )
 
     def loraReceivedSubscribe(self, _mac, _type, _payload):
         if self.receiveSubscribe:
@@ -140,8 +162,8 @@ class Forwarder(object):
         # self.isTimeout = False 
         self.checkTimeout = True 
         self.tries = 0
-
         #Send Response 
+
     def receivedJoinRequest(self, _MAC, _type, _payload): #Receiver
         print("receive-JoinRequest:",_MAC, _type, _payload)
         payload = None
@@ -284,8 +306,9 @@ class Forwarder(object):
         while True:
             if self.lora:
                 self.lora.receive()
-            # if self.mqttx:
-            #     self.mqttx.receive()
+            if self.mqttx:
+                if self.mqttx.enabled:
+                    self.mqttx.receive()
 
             if self.l_buffer: #and self.latest_tries is None
                 self.latest_tries = self.l_buffer.pop(0)

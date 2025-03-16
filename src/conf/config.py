@@ -52,7 +52,7 @@ lora_parameters = {
 }
 
 mqtt_config = {
-    'enabled': False,  #mote must be False 
+    'enabled': False,  #Mote must be False 
     'server':'202.29.30.31',
     'port':1883,
     'tls_enabled': False,

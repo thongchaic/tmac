@@ -6,7 +6,8 @@ class TMAC:
 
     MQTT_PUBLISH = 1
     MQTT_SUBSCRIBE = 2
-    
+    MQTT_LORA_SUBSCRIBE = 7
+
     ACK = 5
     JOINREQUEST = 3
     JOINRESPONSE = 4
@@ -52,8 +53,8 @@ class TMAC:
         MAC = MAC.encode() if isinstance(MAC, (str)) else MAC
 
         '''
-            | MAC = 48-bit MAC Address 
-            | t = 8-bit Types Pub/Sub/Join
+            | MAC = 48-bit MAC Address
+            | t = 8-bit Types Pub/Sub/Join/etc...
             | c = 4-bit Fragment Count 
             | i = 4-bit Fragment Index
             | l = 8-bit Payload Length     

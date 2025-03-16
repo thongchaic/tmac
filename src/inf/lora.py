@@ -91,7 +91,7 @@ class LoRa(object):
         frag_count = 0
 
         #TODO -- generate ACK block 
-        #
+
         GroupACK = 0
         
         if f_index == 0: #receive the first fragment => clear existing frames 
@@ -114,9 +114,9 @@ class LoRa(object):
                 for i, frag in enumerate(self.buffer[_mac]):
                     print("Re:",_mac,i, frag, bin(GroupACK), sep="\t")
                     if i == frag[0]:
-                        GroupACK = (GroupACK << 1) | 1
+                        GroupACK = (GroupACK << 1) | 1  #TODO - algorithm for group ACK
                     else:
-                        GroupACK = (GroupACK << 1) | 0
+                        GroupACK = (GroupACK << 1) | 0  #TODO - algorithm for group ACK
                     o_payload = o_payload + frag[1]
                 self.buffer.pop(_mac)
             else:
@@ -125,8 +125,7 @@ class LoRa(object):
                 o_payload = _payload #Single fragment
                 print("Re:",_mac, frag_count, bin(GroupACK), p_type, o_payload, sep="\t")
             
-        
-        #print(o_payload)
+        print("p_type:", _mac, self.MAC,p_type, "=>", o_payload)
         if p_type == TMAC.JOINREQUEST:
             if self.receivedJoinRequest:
                 self.receivedJoinRequest(_mac, p_type, o_payload)

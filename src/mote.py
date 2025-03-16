@@ -14,6 +14,7 @@ class Main:
     def __init__(self):
         self.joined = False 
         self.fw = Forwarder(config.MAC, config.device_config, config.lora_parameters, config.mqtt_config)
+        self.fw.receiveSubscribe = self.receiveSubscribe
         print("""
             #      ^^ 
             #     (oo) 
@@ -23,7 +24,9 @@ class Main:
             #  ---------- 
             System Init...""")
 
-    def joinGateway(self):
+    def send(self):
+
+        #Join Gateway 
         self.nonce = random.random() #Generate a new nonce 
         join_payload={
             "token" : config.device_config['token'],
@@ -35,29 +38,30 @@ class Main:
             time.sleep(1)
         print("network joined")
 
-        data = "ON"
+        #Send data
+        data = "encrypted: data-9ce4abc3a6c3204ef5a5d98b18a018fe"
 
         payload={
             "name" : "th/ac/srru/thongchai/office/relay",
-            "value"   : data #TODO - enable end-to-end encryption 
+            "with_sub": True,
+            "payload"   : data #TODO - enable end-to-end encryption 
         }
-
         self.fw.loraPublish(TMAC.MQTT_PUBLISH, payload)
-        
+
         #register mqtt names 
 
         #subscribe names  
 
         #publish data
-    
+
     def joinResponded(self,status, _MAC, _type, _payload):
         print("joinResponded,=>",status, _MAC, _type, _payload)
         if status == 1:
             self.joined = True
 
-    def publishCallback(self, _mac, p_type, payload):#=> sould(_mac, status, p_type, payload)
-        print(_mac, p_type, payload)
+    def receiveSubscribe(self, _mac, _type, _payload):
+        print("Brawo: got message from the broker: ",_mac, _type, _payload)
 
 if __name__ == "__main__":
     main = Main()
-    main.joinGateway()
+    main.send()
