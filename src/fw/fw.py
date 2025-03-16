@@ -257,42 +257,7 @@ class Forwarder(object):
                 self.tries = 0
                 self.latest_tries = None 
                 self.joinResponded(-1, self.latest_tries[0], self.latest_tries[1], self.latest_tries[2])
-
-    # def loraSpecial(self,_mac, _type, _payload):
-   
-    #     #print("Trigger to simulate subscribes over lora")
-        
-    #     data = self.toJSON(_payload)
-    #     if data is None:
-    #         return 
-    #     if 'letters' not in data:
-    #         return 
-    #     if 'count' not in data:
-    #         return 
-
-    #     letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        
-    #     i = int(data['count'])
-    #     while i > 0:
-    #         rand = ''.join(random.choice(letters) for i in range(data['letters']))
-    #         payload = {
-    #             "MAC": self.MAC,
-    #             "value": rand,
-    #         }
-    #         #print("send Special:",json.dumps(payload).encode())
-    #         self.l_buffer.append( (data["MAC"], TMAC.SUBSCRIBE, json.dumps(payload).encode()) )
-    #         i = i-1
-    #         time.sleep(5)
-
-    # def sendloraSpecial(self,letters,count):
-    #     GW = self.names.gw()
-    #     payload = {
-    #        "MAC": self.MAC,
-    #        "count": count,
-    #        "letters": letters
-    #     }     
-    #     self.l_buffer.append( (GW, TMAC.SPECIAL, json.dumps(payload).encode()) )
-
+]
 
     def toJSON(self,payload):
         try:
