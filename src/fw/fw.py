@@ -21,7 +21,6 @@ class Forwarder(object):
         self.MAC=MAC 
         self.Ts = 0
         self.To = 0 
-        
         self.tries = 0
         self.checkTimeout = False
         self.latest_tries = None 
@@ -29,7 +28,6 @@ class Forwarder(object):
         self.TOKEN = device_config['token']
         self.tokens = Tokens()
         self.routes = Routes()
-
         self.loraCallback = None 
         self.receiveSubscribe = None 
         self.ACK = None 
@@ -285,4 +283,3 @@ class Forwarder(object):
                 if (self.To-self.Ts) > (1000*5): #Collision occur | Gaateway does not in ranges 
                     self.checkTimeout = False 
                     self.ALOHA() #ALOHA 
-

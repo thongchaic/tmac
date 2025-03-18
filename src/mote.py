@@ -60,7 +60,7 @@ class Main:
             self.joined = True
 
     def receiveSubscribe(self, _mac, _type, _payload):
-        print("Brawo: got message from the broker: ",_mac, _type, _payload)
+        print("Brawo: got message from the MQTT broker: ",_mac, _type, _payload)
 
 if __name__ == "__main__":
     main = Main()
