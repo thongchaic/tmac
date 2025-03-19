@@ -25,12 +25,11 @@ class Main:
             System Init...""")
 
     def send(self):
-
         #Join Gateway 
         self.nonce = random.random() #Generate a new nonce 
         join_payload={
             "token" : config.device_config['token'],
-            "nonce" : self.nonce
+            "nonce" : random.random()
         }
         self.fw.sendJoinRequest( config.MAC, json.dumps(join_payload).encode() , self.joinResponded)
 
