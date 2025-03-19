@@ -26,6 +26,9 @@ To publish an MQTT message over LoRa networks, an end IoT device must include a 
 ![Alt text](images/subscribe.jpg)
 For a subscribe message from the MQTT broker, the gateway retrieves the corresponding MAC address from the named table to provide the NDNLP header. The SCHC header model then constructs and incorporates the MQTT payload into a packet. The gateway subsequently generates NDNLP fragments and transmits them to the destination MAC address.
 
+# TODO
+  - To support WebSocket 
+
 # License
 MIT License
 Copyright (c) 2025 Thongchai Chuachan
